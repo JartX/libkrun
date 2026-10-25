@@ -1041,6 +1041,32 @@ int32_t krun_setgid(uint32_t ctx_id, gid_t gid);
  */
 int32_t krun_set_nested_virt(uint32_t ctx_id, bool enabled);
 
+#define KRUN_FREE_PAGE_REPORTING_MODE_DEFAULT 0
+#define KRUN_FREE_PAGE_REPORTING_MODE_REPLACE 1
+
+/**
+ * Sets what the balloon device does with the pages of the guest's free page reports.
+ *
+ * KRUN_FREE_PAGE_REPORTING_MODE_DEFAULT, the default, madvise()s them. On macOS, this doesn't
+ * release the pages that the guest has written to, so the host doesn't get them back.
+ *
+ * KRUN_FREE_PAGE_REPORTING_MODE_REPLACE has the VMM replace the reported pages with fresh
+ * memory, which gives them back to the host even if the guest has written to them, at the cost
+ * of a few system calls per report. Only macOS implements it; elsewhere it behaves like
+ * KRUN_FREE_PAGE_REPORTING_MODE_DEFAULT.
+ *
+ * The guest only reports free pages if its kernel has CONFIG_PAGE_REPORTING and the
+ * virtio-balloon driver.
+ *
+ * Arguments:
+ *  "ctx_id" - the configuration context ID.
+ *  "mode"   - one of the KRUN_FREE_PAGE_REPORTING_MODE_* values.
+ *
+ * Returns:
+ *  Zero on success or a negative error number on failure (-EINVAL for an unknown mode).
+ */
+int32_t krun_set_free_page_reporting_mode(uint32_t ctx_id, uint32_t mode);
+
 /**
  * Check the system if Nested Virtualization is supported
  *

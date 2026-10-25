@@ -983,6 +983,8 @@ pub fn build_microvm(
         event_manager,
         intc.clone(),
         #[cfg(target_os = "macos")]
+        vm_resources.free_page_reporting_mode,
+        #[cfg(target_os = "macos")]
         _sender.clone(),
     )?;
     #[cfg(not(feature = "tee"))]
@@ -2218,16 +2220,22 @@ fn attach_balloon_device(
     vmm: &mut Vmm,
     event_manager: &mut EventManager,
     intc: IrqChip,
+    #[cfg(target_os = "macos")] free_page_reporting_mode: devices::virtio::FreePageReportingMode,
     #[cfg(target_os = "macos")] map_sender: Sender<WorkerMessage>,
 ) -> std::result::Result<(), StartMicrovmError> {
     use self::StartMicrovmError::*;
 
     let balloon = Arc::new(Mutex::new(devices::virtio::Balloon::new().unwrap()));
 
-    // 1.x has no BalloonDevice API, so the balloon gets the worker channel here.
+    // 1.x has no BalloonDevice API, so the balloon gets its mode and the worker channel
+    // here. The mode goes first: set_map_sender() only starts the reclaimer in Replace.
     #[cfg(target_os = "macos")]
-    if let Err(e) = balloon.lock().unwrap().set_map_sender(map_sender) {
-        error!("balloon: free page reclaim is off, the reclaim thread didn't start: {e:?}");
+    {
+        let mut b = balloon.lock().unwrap();
+        b.set_free_page_reporting_mode(free_page_reporting_mode);
+        if let Err(e) = b.set_map_sender(map_sender) {
+            error!("balloon: free page reclaim is off, the reclaim thread didn't start: {e:?}");
+        }
     }
 
     event_manager

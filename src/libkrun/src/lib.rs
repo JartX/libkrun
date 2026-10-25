@@ -1958,6 +1958,22 @@ pub unsafe extern "C" fn krun_set_nested_virt(ctx_id: u32, enabled: bool) -> i32
     }
 }
 
+#[no_mangle]
+pub extern "C" fn krun_set_free_page_reporting_mode(ctx_id: u32, mode: u32) -> i32 {
+    let mode = match mode {
+        0 => devices::virtio::FreePageReportingMode::Default,
+        1 => devices::virtio::FreePageReportingMode::Replace,
+        _ => return -libc::EINVAL,
+    };
+    match CTX_MAP.lock().unwrap().entry(ctx_id) {
+        Entry::Occupied(mut ctx_cfg) => {
+            ctx_cfg.get_mut().vmr.free_page_reporting_mode = mode;
+            KRUN_SUCCESS
+        }
+        Entry::Vacant(_) => -libc::ENOENT,
+    }
+}
+
 #[allow(clippy::missing_safety_doc)]
 #[no_mangle]
 pub unsafe extern "C" fn krun_check_nested_virt() -> i32 {

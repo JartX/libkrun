@@ -192,6 +192,8 @@ pub struct VmResources {
     pub virtio_consoles: Vec<VirtioConsoleConfigMode>,
     /// Enable the embedded dhcp client in init.c
     pub dhcp_client: bool,
+    /// What the balloon does with the pages of free page reports.
+    pub free_page_reporting_mode: devices::virtio::FreePageReportingMode,
 }
 
 impl VmResources {
@@ -444,6 +446,7 @@ mod tests {
             virtio_consoles: Vec::new(),
             kernel_console: None,
             dhcp_client: false,
+            free_page_reporting_mode: Default::default(),
         }
     }
 
